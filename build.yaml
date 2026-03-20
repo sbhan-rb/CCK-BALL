@@ -2,9 +2,9 @@ name: Build ZMK Firmware
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
+    branches: [main]
 
 jobs:
   build:
@@ -13,7 +13,9 @@ jobs:
 
     strategy:
       matrix:
-        shield: [left, right]
+        shield: [cck_ball_left, cck_ball_right]  # ← 빌드할 쉴드 종류
+        board: [nice_nano_v2]                    # ← 보드 종류 (nice_nano_v2)
+      fail-fast: false
 
     steps:
       - name: Checkout repository
@@ -22,23 +24,29 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.12"
+          python-version: 3.12
 
       - name: Install west
         run: |
-          python -m pip install --upgrade pip
-          pip install west cmake ninja
+          pip install --upgrade pip
+          pip install west
 
       - name: Initialize Zephyr
         run: west init -l .
-      
+
       - name: Update Zephyr modules
         run: west update
 
-      - name: Build ZMK Firmware
+      - name: Build ZMK
         run: |
           west build -s zmk/app \
-                     -b nice_nano \
-                     -d /tmp/build-${{ matrix.shield }} \
-                     -- -DZMK_CONFIG=$GITHUB_WORKSPACE/config \
-                        -DSHIELD=cck_ball_${{ matrix.shield }}
+                     -d build/${{ matrix.shield }} \
+                     -b ${{ matrix.board }} \
+                     -- -DZMK_CONFIG=./config \
+                        -DSHIELD=${{ matrix.shield }}
+
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: zmk-firmware-${{ matrix.shield }}
+          path: build/${{ matrix.shield }}/zephyr/zmk.uf2
