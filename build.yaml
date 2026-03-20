@@ -1,4 +1,4 @@
-name: Build ZMK Workflow   # workflow 최상위 이름
+name: Build ZMK Firmware
 
 on:
   push:
@@ -8,45 +8,37 @@ on:
 
 jobs:
   build:
-    name: Build ZMK        # job 이름 (optional)
+    name: Build ZMK Firmware ({{ matrix.shield }})
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        shield: [left, right]
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          submodules: recursive
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.12
+          python-version: "3.12"
 
-      - name: Install dependencies
+      - name: Install west
         run: |
-          pip install west
-          pip install -r zephyr/scripts/requirements.txt
+          python -m pip install --upgrade pip
+          pip install west cmake ninja
 
-      - name: Initialize West and update modules
-        run: |
-          west init -l .
-          west update
-          west zephyr-export
+      - name: Initialize Zephyr
+        run: west init -l .
+      
+      - name: Update Zephyr modules
+        run: west update
 
-      - name: Build left shield
-        run: |
-          west build -s zmk/app \
-                     -d build/left \
-                     -b nice_nano_v2 \
-                     -- -DZMK_CONFIG=./config \
-                        -DSHIELD=cck_ball_left \
-                        -DBOARD_ROOT=./config/boards
-
-      - name: Build right shield
+      - name: Build ZMK Firmware
         run: |
           west build -s zmk/app \
-                     -d build/right \
-                     -b nice_nano_v2 \
-                     -- -DZMK_CONFIG=./config \
-                        -DSHIELD=cck_ball_right \
-                        -DBOARD_ROOT=./config/boards
+                     -b nice_nano \
+                     -d /tmp/build-${{ matrix.shield }} \
+                     -- -DZMK_CONFIG=$GITHUB_WORKSPACE/config \
+                        -DSHIELD=cck_ball_${{ matrix.shield }}
