@@ -1,4 +1,4 @@
-name: Build ZMK
+name: Build ZMK Workflow   # workflow 최상위 이름
 
 on:
   push:
@@ -8,44 +8,45 @@ on:
 
 jobs:
   build:
+    name: Build ZMK        # job 이름 (optional)
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        submodules: recursive   # 서브모듈도 같이 체크아웃
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: 3.12
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
 
-    - name: Install dependencies
-      run: |
-        pip install west
-        pip install -r zephyr/scripts/requirements.txt
+      - name: Install dependencies
+        run: |
+          pip install west
+          pip install -r zephyr/scripts/requirements.txt
 
-    - name: Initialize West and update modules
-      run: |
-        west init -l .
-        west update
-        west zephyr-export
+      - name: Initialize West and update modules
+        run: |
+          west init -l .
+          west update
+          west zephyr-export
 
-    - name: Build left shield
-      run: |
-        west build -s zmk/app \
-                   -d build/left \
-                   -b nice_nano_v2 \
-                   -- -DZMK_CONFIG=./config \
-                      -DSHIELD=cck_ball_left \
-                      -DBOARD_ROOT=./config/boards   # 보드 정의 경로 지정
+      - name: Build left shield
+        run: |
+          west build -s zmk/app \
+                     -d build/left \
+                     -b nice_nano_v2 \
+                     -- -DZMK_CONFIG=./config \
+                        -DSHIELD=cck_ball_left \
+                        -DBOARD_ROOT=./config/boards
 
-    - name: Build right shield
-      run: |
-        west build -s zmk/app \
-                   -d build/right \
-                   -b nice_nano_v2 \
-                   -- -DZMK_CONFIG=./config \
-                      -DSHIELD=cck_ball_right \
-                      -DBOARD_ROOT=./config/boards   # 보드 정의 경로 지정
+      - name: Build right shield
+        run: |
+          west build -s zmk/app \
+                     -d build/right \
+                     -b nice_nano_v2 \
+                     -- -DZMK_CONFIG=./config \
+                        -DSHIELD=cck_ball_right \
+                        -DBOARD_ROOT=./config/boards
